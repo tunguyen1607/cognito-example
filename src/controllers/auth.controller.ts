@@ -30,16 +30,19 @@ class AuthController {
       const { username, password, email, gender, birthdate, name, family_name } = req.body;
       let userAttr = [];
       userAttr.push({ Name: 'email', Value: email});
-      userAttr.push({ Name: 'gender', Value: gender});
-      userAttr.push({ Name: 'birthdate', Value: birthdate.toString()});
-      userAttr.push({ Name: 'name', Value: name});
-      userAttr.push({ Name: 'family_name', Value: family_name});
+      // userAttr.push({ Name: 'gender', Value: gender});
+      // userAttr.push({ Name: 'birthdate', Value: birthdate.toString()});
+      // userAttr.push({ Name: 'name', Value: name});
+      // userAttr.push({ Name: 'family_name', Value: family_name});
 
 
       let cognitoService = new Cognito();
-      cognitoService.signUpUser(username, password, userAttr)
+      cognitoService.signUpUser(email, password, userAttr)
         .then(success => {
           success ? res.status(200).end() : res.status(400).end()
+        })
+        .catch(err => {
+            res.status(400).json({message: err.message})
         })
     }
 
@@ -83,13 +86,13 @@ class AuthController {
       if (!result.isEmpty()) {
         return res.status(422).json({ errors: result.array() });
       }
-      const { username, password, code } = req.body;
+      const { email, password, code } = req.body;
 
       let cognitoService = new Cognito();
-      cognitoService.confirmNewPassword(username, password, code)
+      cognitoService.confirmNewPassword(email, password, code)
         .then(success => {
           success ? res.status(200).end(): res.status(400).end()
-        })
+        }).catch(err => res.status(400).json({message: err.message, error: true}))
     }
 
     forgotPassword = (req: Request, res: Response) => {
@@ -97,10 +100,10 @@ class AuthController {
       if (!result.isEmpty()) {
         return res.status(422).json({ errors: result.array() });
       }
-      const { username } = req.body;
+      const { email } = req.body;
 
       let cognitoService = new Cognito();
-      cognitoService.forgotPassword(username)
+      cognitoService.forgotPassword(email)
         .then(success => {
           success ? res.status(200).end(): res.status(400).end()
         });
@@ -110,32 +113,32 @@ class AuthController {
       switch (type) {
         case 'signUp':
           return [
-            body('username').notEmpty().isLength({min: 5}),
+            // body('username').notEmpty().isLength({min: 5}),
             body('email').notEmpty().normalizeEmail().isEmail(),
             body('password').isString().isLength({ min: 8}),
-            body('birthdate').exists().isISO8601(),
-            body('gender').notEmpty().isString(),
-            body('name').notEmpty().isString(),
-            body('family_name').notEmpty().isString()
+            // body('birthdate').exists().isISO8601(),
+            // body('gender').notEmpty().isString(),
+            // body('name').notEmpty().isString(),
+            // body('family_name').notEmpty().isString()
           ]
         case 'signIn':
           return [
-            body('username').notEmpty().isLength({min: 5}),
+            body('email').normalizeEmail().isEmail().notEmpty().isLength({min: 5}),
             body('password').isString().isLength({ min: 8}),
           ]
         case 'verify':
           return [
-            body('username').notEmpty().isLength({min: 5}),
+            body('email').notEmpty().isLength({min: 5}),
             body('code').notEmpty().isString().isLength({min: 6, max: 6})
           ]
         case 'forgotPassword':
           return [
-            body('username').notEmpty().isLength({ min: 5}),
+            body('email').notEmpty().isLength({ min: 5}),
           ]
         case 'confirmPassword':
           return [
             body('password').exists().isLength({ min: 8}),
-            body('username').notEmpty().isLength({ min: 5}),
+            body('email').notEmpty().isLength({ min: 5}),
             body('code').notEmpty().isString().isLength({min: 6, max: 6})
           ]
       }

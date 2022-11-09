@@ -13,9 +13,9 @@ class AuthMiddleware {
     this.setUp()
   }
 
-  private verifyToken(req: Request, resp: Response, next): void {
+  public verifyToken(req: Request, resp: Response, next): void {
     const { token } = req.body;
-    console.log(token)
+    console.log(token);
     if (!token) return resp.status(401).end();
 
     let decodedJwt: any = jwt.decode(token, { complete: true });

@@ -1,118 +1,87 @@
-import AWS from 'aws-sdk';
 import crypto from 'crypto'
+import CognitoHelper from '../helpers/cognito';
 
 export default class Cognito {
-  private config = {
-    apiVersion: '2016-04-18',
-    region: 'ca-central-1',
-  }
-  private secretHash = '10j74r0nsekujafhd777t01omagltb34m16mvrb8e3v6rfop7ud3'
-  private clientId = '7lkobomofk4vsi2iktb0mdmaeq';
+    private cognitoIdentity;
 
-  private cognitoIdentity;
-
-  constructor(){
-    this.cognitoIdentity = new AWS.CognitoIdentityServiceProvider(this.config)
-  }
-
-  public async signUpUser(username: string, password: string, userAttr: Array<any>): Promise<boolean> {
-    
-    var params = {
-      ClientId: this.clientId, /* required */
-      Password: password, /* required */
-      Username: username, /* required */
-      SecretHash: this.hashSecret(username),
-      UserAttributes: userAttr,
+    constructor() {
+        this.cognitoIdentity = new CognitoHelper();
+        this.cognitoIdentity.initAWS();
     }
 
-    try {
-      const data = await this.cognitoIdentity.signUp(params).promise()
-      console.log(data)
-      return true
-    } catch (error) {
-      console.log(error)
-      return false
-    }
-  }
+    public async signUpUser(email: string, password: string, userAttr: Array<any>, agent: string = 'none'): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.cognitoIdentity.setCognitoAttributeList(email, agent);
+            this.cognitoIdentity.getUserPool.signUp(email, password, this.cognitoIdentity.getCognitoAttributeList(), null, function (err, result) {
+                if (err) {
+                    return reject(err);
+                }
+                return resolve({
+                    username: result.user.username,
+                    userConfirmed: result.userConfirmed,
+                    userAgent: result.user.client.userAgent,
+                });
+            });
+        })
 
-  public async signInUser(username: string, password: string): Promise<boolean> {
-    var params = {
-      AuthFlow: 'USER_PASSWORD_AUTH', /* required */
-      ClientId: this.clientId, /* required */
-      AuthParameters: {
-        'USERNAME': username,
-        'PASSWORD': password,
-        'SECRET_HASH': this.hashSecret(username)
-      },
     }
 
-    try {
-      let data = await this.cognitoIdentity.initiateAuth(params).promise();
-      console.log(data); 
-      return true;
-    } catch (error) {
-      console.log(error)
-      return false;
-    }
-  }
+    public async signInUser(email: string, password: string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.cognitoIdentity.getCognitoUser(email).authenticateUser(this.cognitoIdentity.getAuthDetails(email, password), {
+                onSuccess: (result) => {
+                    const token = {
+                        accessToken: result.getAccessToken().getJwtToken(),
+                        idToken: result.getIdToken().getJwtToken(),
+                        refreshToken: result.getRefreshToken().getToken(),
+                    }
+                    return resolve(this.cognitoIdentity.decodeJWTToken(token))
+                },
 
-  public async confirmSignUp(username: string, code: string): Promise<boolean> {
-    var params = {
-      ClientId: this.clientId,
-      ConfirmationCode: code,
-      Username: username,
-      SecretHash: this.hashSecret(username),
-    };
-
-    try {
-      const cognitoResp = await this.cognitoIdentity.confirmSignUp(params).promise();
-      console.log(cognitoResp)
-      return true
-    } catch (error) {
-      console.log("error", error)
-      return false
-    }
-  }
-
-  public async forgotPassword(username): Promise<boolean> {
-    var params = {
-      ClientId: this.clientId, /* required */
-      Username: username, /* required */
-      SecretHash: this.hashSecret(username),
+                onFailure: (err) => {
+                    return reject(err);
+                },
+            });
+        });
     }
 
-    try {
-      const data = await this.cognitoIdentity.forgotPassword(params).promise();
-      console.log(data);
-      return true
-    } catch (error) {
-      console.log(error);
-      return false;
+    public async confirmSignUp(email: string, code: string): Promise<any> {
+      return new Promise((resolve, reject) => {
+        this.cognitoIdentity.getCognitoUser(email).confirmRegistration(code, true, (err, result) => {
+          if (err) {
+            return reject(err);
+          }
+          return resolve(result);
+        });
+      });
     }
-  }
 
-  public async confirmNewPassword(username: string, password: string, code: string): Promise<boolean> {
-    var params = {
-      ClientId: this.clientId, /* required */
-      ConfirmationCode: code, /* required */
-      Password: password, /* required */
-      Username: username, /* required */
-      SecretHash: this.hashSecret(username),
-    };
+    public async forgotPassword(email): Promise<boolean> {
+        return new Promise( (resolve, reject) => {
+            this.cognitoIdentity.getCognitoUser(email).forgotPassword({
+                onSuccess: (result) => {
+                    console.log(result);
+                    return resolve(result)
+                },
 
-    try {
-      const data = await this. cognitoIdentity.confirmForgotPassword(params).promise();
-      console.log(data);
-      return true;
-    } catch (error) {
-      console.log(error);
-      return false;
+                onFailure: (err) => {
+                    return reject(err);
+                },
+            });
+        })
     }
-  }
 
-  private hashSecret(username: string): string {
-    return crypto.createHmac('SHA256', this.secretHash)
-    .update(username + this.clientId)
-    .digest('base64')  
-  } 
+    public async confirmNewPassword(email: string, password: string, code: string): Promise<boolean> {
+        return new Promise( (resolve, reject) => {
+            this.cognitoIdentity.getCognitoUser(email).confirmPassword(code, password, {
+                onSuccess: (result) => {
+                    return resolve(result)
+                },
+                onFailure: (err) => {
+                    return reject(err);
+                },
+            });
+        })
+    }
+
 }

@@ -17,85 +17,15 @@ export default {
   port: parseInt(process.env.PORT, 10),
 
   /**
-   * That long string from mlab
-   */
-  databaseURL: !process.env.MONGODB_USER
-    ? process.env.MONGODB_URI
-    : `mongodb://${process.env.MONGODB_USER}:${encodeURIComponent(process.env.MONGODB_PASS)}@${
-        process.env.MONGODB_HOST
-      }:27017/${process.env.MONGODB_DATABASE}?authSource=admin`,
-
-  /**
-   * Your secret sauce
-   */
-  jwtSecret: process.env.JWT_SECRET,
-
-  /**
-   * Used by winston logger
-   */
-  logs: {
-    level: process.env.LOG_LEVEL || 'silly',
-  },
-
-  /**
-   * Agenda.js stuff
-   */
-  agenda: {
-    dbCollection: process.env.AGENDA_DB_COLLECTION,
-    pooltime: process.env.AGENDA_POOL_TIME,
-    concurrency: parseInt(process.env.AGENDA_CONCURRENCY, 10),
-  },
-
-  /**
-   * Agendash config
-   */
-  agendash: {
-    user: 'agendash',
-    password: '123456',
-  },
-  /**
    * API configs
    */
   api: {
     prefix: '/api',
   },
-  /**
-   * Mailgun email credentials
-   */
-  emails: {
-    apiKey: 'API key from mailgun',
-    domain: 'Domain Name from mailgun',
-  },
-  rabbitmq: {
-    url: process.env.CLOUDAMQP_URL,
-  },
-  sequelize: [
-    {
-      database: process.env.SQL_DATABASE,
-      host: process.env.SQL_HOST,
-      port: process.env.SQL_PORT || 3306,
-      user: process.env.SQL_USER,
-      password: process.env.SQL_PASS,
-      dialect: process.env.SQL_DIALECT,
-    },
-  ],
-  auth: {
-    host: process.env.CEN_OAUTH_HOST,
-    client: process.env.CEN_OAUTH_CLIENT,
-    secret: process.env.CEN_OAUTH_SECRET,
-    scope: process.env.CEN_OAUTH_CLIENT_SCOPE,
-  },
-  notification: {
-    host: process.env.NOTIFICATION_HOST
-  },
-  aws: {
-    bucketName: 'anyscore',
-    userKey: 'AKIASHXBKV5W2ZAXSRE5',
-    userSecret: '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',
-  },
-  redis: {
-    password: process.env.REDIS_PASSWORD || '',
-    host: process.env.REDIS_HOST || '127.0.0.1',
-    port: process.env.REDIS_PORT || 6379,
+
+  cognito: {
+    poolId: process.env.AWS_COGNITO_USER_POOL_ID,
+    clientId: process.env.AWS_COGNITO_CLIENT_ID,
+    region: process.env.AWS_COGNITO_REGION || 6379,
   },
 };
